@@ -40,16 +40,29 @@ export const HomeScreen: React.FC = () => {
     loadBiometrics();
   }, []);
 
-  // Telemetría de Conteo de Pasos en Tiempo Real (Acelerómetro + Simulación de Movimiento Activo)
+  // Telemetría de Conteo de Pasos Exclusivo por Movimiento Físico Real (Acelerómetro)
   useEffect(() => {
     if (loading) return;
 
+    let lastStepTime = 0;
+
     const handleMotion = (event: DeviceMotionEvent) => {
-      const acc = event.accelerationIncludingGravity;
+      const acc = event.accelerationIncludingGravity || event.acceleration;
       if (acc) {
-        const magnitude = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2);
-        if (magnitude > 12.5) {
-          setLiveSteps((prev) => prev + 1);
+        const x = acc.x || 0;
+        const y = acc.y || 0;
+        const z = acc.z || 0;
+        const magnitude = Math.sqrt(x * x + y * y + z * z);
+        const now = Date.now();
+
+        // Filtro de aceleración física de paso real (>13.5 m/s²) con intervalo mínimo de 300ms entre pasos
+        if (magnitude > 13.5 && now - lastStepTime > 300) {
+          lastStepTime = now;
+          setLiveSteps((prev) => {
+            const nextSteps = prev + 1;
+            setLiveCalories(Math.round(nextSteps * 0.04));
+            return nextSteps;
+          });
         }
       }
     };
@@ -58,19 +71,10 @@ export const HomeScreen: React.FC = () => {
       window.addEventListener('devicemotion', handleMotion);
     }
 
-    const stepInterval = setInterval(() => {
-      setLiveSteps((prev) => {
-        const nextSteps = prev + Math.floor(Math.random() * 2) + 1;
-        setLiveCalories(Math.round(nextSteps * 0.04));
-        return nextSteps;
-      });
-    }, 3000);
-
     return () => {
       if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
         window.removeEventListener('devicemotion', handleMotion);
       }
-      clearInterval(stepInterval);
     };
   }, [loading]);
 

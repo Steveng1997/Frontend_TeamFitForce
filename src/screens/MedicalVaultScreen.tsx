@@ -50,25 +50,39 @@ export const MedicalVaultScreen: React.FC = () => {
     if (!filesList || filesList.length === 0) return;
 
     const filesArray = Array.from(filesList);
-    setSelectedFile(filesArray.map((f) => f.name).join(', '));
     setIsAnalyzing(true);
 
     try {
-      const res = await medicalService.uploadExamFiles(filesArray);
-      if (res.success && res.data) {
-        if (res.data.aiResponseId) setAiResponseId(res.data.aiResponseId);
+      let lastAnalysisResult = null;
 
-        if (res.data.analysis) {
-          setAnalysis(res.data.analysis);
-          if (res.data.analysis.biomarkers) {
-            setBiomarkers(res.data.analysis.biomarkers);
+      for (let i = 0; i < filesArray.length; i++) {
+        const file = filesArray[i];
+        setSelectedFile(`Analizando (${i + 1}/${filesArray.length}): ${file.name}`);
+
+        const res = await medicalService.uploadExamFile(file);
+        if (res.success && res.data) {
+          if (res.data.aiResponseId) setAiResponseId(res.data.aiResponseId);
+          if (res.data.analysis) {
+            lastAnalysisResult = res.data.analysis;
           }
         }
+      }
+
+      // Reobtener la lista completa consolidada de biomarcadores e informe registrados en BD
+      const updatedBiomarkers = await medicalService.getBiomarkers();
+      setBiomarkers(updatedBiomarkers || []);
+
+      const updatedAnalysis = await medicalService.getAnalysisResults();
+      if (updatedAnalysis) {
+        setAnalysis(updatedAnalysis);
+      } else if (lastAnalysisResult) {
+        setAnalysis(lastAnalysisResult);
       }
     } catch (err) {
       console.warn('Error subiendo examen(es):', err);
     } finally {
       setIsAnalyzing(false);
+      setSelectedFile(null);
     }
   };
 
