@@ -41,6 +41,11 @@ export const CoachScreen: React.FC = () => {
           const lastCoachMsg = [...history].reverse().find((m) => m.sender === 'coach');
           if (lastCoachMsg?.content) {
             setMotivationalText(lastCoachMsg.content);
+            if (!isCoachMuted) {
+              setTimeout(() => {
+                speakMotivationalQuote(lastCoachMsg.content);
+              }, 400);
+            }
           }
         }
       } catch (err) {
@@ -51,14 +56,15 @@ export const CoachScreen: React.FC = () => {
   }, []);
 
   // Función principal para hablar el texto con Voz Sintética en Español
-  const speakMotivationalQuote = useCallback(() => {
-    if (isCoachMuted || !motivationalText) return;
+  const speakMotivationalQuote = useCallback((textToSpeak?: string) => {
+    const text = textToSpeak || motivationalText;
+    if (isCoachMuted || !text) return;
 
-    if ('speechSynthesis' in window) {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel(); // Cancelar cualquier audio previo
 
-        const utterance = new SpeechSynthesisUtterance(motivationalText);
+        const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'es-ES';
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
@@ -154,6 +160,8 @@ export const CoachScreen: React.FC = () => {
       const newMsg = await coachService.triggerMotivate();
       if (newMsg) {
         setMotivationalText(newMsg);
+        speakMotivationalQuote(newMsg);
+        return;
       }
     } catch (err) {
       console.warn('Error al obtener motivación:', err);
