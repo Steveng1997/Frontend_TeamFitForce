@@ -3,6 +3,8 @@ import { useApp } from '../context/AppContext';
 import { BottomNavigation } from '../components/BottomNavigation';
 import { ArrowLeftIcon } from '../components/SvgIcons';
 import { nutritionService, type NutritionSummary, type RecipeItem } from '../services/nutritionService';
+import { medicalService } from '../services/medicalService';
+import type { MedicalAnalysisResult } from '../types';
 
 export const FoodFitScreen: React.FC = () => {
   const { setSelectedRecipeId, navigate, theme } = useApp();
@@ -10,6 +12,7 @@ export const FoodFitScreen: React.FC = () => {
 
   const [summary, setSummary] = useState<NutritionSummary | null>(null);
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
+  const [medicalAnalysis, setMedicalAnalysis] = useState<MedicalAnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -21,6 +24,9 @@ export const FoodFitScreen: React.FC = () => {
 
         const list = await nutritionService.getRecipes();
         if (list) setRecipes(list);
+
+        const medRes = await medicalService.getAnalysisResults();
+        setMedicalAnalysis(medRes);
       } catch (err) {
         console.warn('Error cargando datos de nutrición desde la API:', err);
       } finally {
@@ -235,6 +241,88 @@ export const FoodFitScreen: React.FC = () => {
                       />
                     </div>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* AI Medical Vault Prescribed Nutrition Card */}
+            <div
+              className={`rounded-3xl p-5 border backdrop-blur-xl shadow-lg transition-colors duration-300 ${
+                isDark
+                  ? 'bg-gradient-to-br from-[#141c2e] via-[#0f172a] to-[#1e1b4b]/50 border-orange-500/30'
+                  : 'bg-gradient-to-br from-orange-50/80 via-white to-amber-50/80 border-orange-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">🧪</span>
+                  <div>
+                    <h3 className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Prescripción Nutricional IA
+                    </h3>
+                    <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">
+                      Sincronizado con Bóveda Médica
+                    </span>
+                  </div>
+                </div>
+                {medicalAnalysis?.biochemScore ? (
+                  <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                    Score: {medicalAnalysis.biochemScore}/100
+                  </span>
+                ) : null}
+              </div>
+
+              {medicalAnalysis && ((medicalAnalysis.recommendedFoods && medicalAnalysis.recommendedFoods.length > 0) || (medicalAnalysis.restrictedFoods && medicalAnalysis.restrictedFoods.length > 0)) ? (
+                <div className="space-y-3 pt-2">
+                  {medicalAnalysis.summary && (
+                    <p className={`text-xs italic leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                      "{medicalAnalysis.summary}"
+                    </p>
+                  )}
+
+                  {medicalAnalysis.recommendedFoods && medicalAnalysis.recommendedFoods.length > 0 && (
+                    <div>
+                      <span className="text-[11px] font-black uppercase tracking-wider text-emerald-400 block mb-1.5">
+                        ✅ Nutrientes y Alimentos Prescritos por IA:
+                      </span>
+                      <div className="space-y-1">
+                        {medicalAnalysis.recommendedFoods.map((item, idx) => (
+                          <div key={idx} className="flex items-start space-x-2 text-xs font-medium">
+                            <span className="text-emerald-400 mt-0.5">•</span>
+                            <span className={isDark ? 'text-slate-200' : 'text-slate-700'}>{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {medicalAnalysis.restrictedFoods && medicalAnalysis.restrictedFoods.length > 0 && (
+                    <div className="pt-2 border-t border-slate-700/40">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-amber-400 block mb-1.5">
+                        ⚠️ Ingredientes a Restringir:
+                      </span>
+                      <div className="space-y-1">
+                        {medicalAnalysis.restrictedFoods.map((item, idx) => (
+                          <div key={idx} className="flex items-start space-x-2 text-xs font-medium">
+                            <span className="text-amber-400 mt-0.5">•</span>
+                            <span className={isDark ? 'text-slate-300' : 'text-slate-600'}>{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-3 space-y-2">
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Aún no has analizado ningún examen médico. Adjunta tu estudio en la Bóveda Médica para prescribir tu nutrición personalizada con IA.
+                  </p>
+                  <button
+                    onClick={() => navigate('medical', 'medica')}
+                    className="text-xs font-bold px-3 py-1.5 rounded-xl bg-orange-500 text-white shadow-md active:scale-95 transition-transform cursor-pointer"
+                  >
+                    🔬 Analizar Examen con IA
+                  </button>
                 </div>
               )}
             </div>

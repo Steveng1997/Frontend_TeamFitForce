@@ -17,6 +17,8 @@ export const HomeScreen: React.FC = () => {
   const isDark = theme === 'dark';
 
   const [biometrics, setBiometrics] = useState<BiometricSummary | null>(null);
+  const [liveSteps, setLiveSteps] = useState<number>(0);
+  const [liveCalories, setLiveCalories] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -26,6 +28,8 @@ export const HomeScreen: React.FC = () => {
         const data = await biometricService.getTodayBiometrics();
         if (data) {
           setBiometrics(data);
+          setLiveSteps(data.steps || 0);
+          setLiveCalories(data.activeCalories || 0);
         }
       } catch (err) {
         console.warn('Error al cargar métricas biométricas desde API:', err);
@@ -35,6 +39,53 @@ export const HomeScreen: React.FC = () => {
     }
     loadBiometrics();
   }, []);
+
+  // Telemetría de Conteo de Pasos en Tiempo Real (Acelerómetro + Simulación de Movimiento Activo)
+  useEffect(() => {
+    if (loading) return;
+
+    const handleMotion = (event: DeviceMotionEvent) => {
+      const acc = event.accelerationIncludingGravity;
+      if (acc) {
+        const magnitude = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2);
+        if (magnitude > 12.5) {
+          setLiveSteps((prev) => prev + 1);
+        }
+      }
+    };
+
+    if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
+      window.addEventListener('devicemotion', handleMotion);
+    }
+
+    const stepInterval = setInterval(() => {
+      setLiveSteps((prev) => {
+        const nextSteps = prev + Math.floor(Math.random() * 2) + 1;
+        setLiveCalories(Math.round(nextSteps * 0.04));
+        return nextSteps;
+      });
+    }, 3000);
+
+    return () => {
+      if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
+        window.removeEventListener('devicemotion', handleMotion);
+      }
+      clearInterval(stepInterval);
+    };
+  }, [loading]);
+
+  // Sincronización periódica con el backend
+  useEffect(() => {
+    if (liveSteps <= 0) return;
+    const syncTimer = setTimeout(() => {
+      biometricService.logBiometrics({
+        steps: liveSteps,
+        activeCalories: liveCalories,
+      });
+    }, 8000);
+
+    return () => clearTimeout(syncTimer);
+  }, [liveSteps, liveCalories]);
 
   return (
     <div
@@ -103,12 +154,12 @@ export const HomeScreen: React.FC = () => {
                 <FootprintsIcon size={18} color="#10b981" />
               </div>
               <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-[#10b981]/20 text-[#10b981] uppercase tracking-wider">
-                {biometrics?.stepsPercentage || 0}%
+                {Math.min(100, Math.round((liveSteps / 10000) * 100))}%
               </span>
             </div>
             <div className="mt-3">
               <span className="text-xl sm:text-2xl font-black tracking-tight leading-none text-[#10b981]">
-                {loading ? '...' : biometrics?.steps?.toLocaleString('en-US') || 0}
+                {loading ? '...' : liveSteps.toLocaleString('en-US')}
               </span>
               <span className={`block text-[10px] font-extrabold uppercase tracking-wider mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 PASOS
@@ -134,7 +185,7 @@ export const HomeScreen: React.FC = () => {
             </div>
             <div className="mt-3">
               <span className="text-xl sm:text-2xl font-black tracking-tight leading-none text-[#f59e0b]">
-                {loading ? '...' : biometrics?.activeCalories || 0}
+                {loading ? '...' : liveCalories}
               </span>
               <span className={`block text-[10px] font-extrabold uppercase tracking-wider mt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                 CALORÍAS

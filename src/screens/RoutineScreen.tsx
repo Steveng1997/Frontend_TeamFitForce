@@ -10,6 +10,8 @@ import {
   StopwatchIcon,
 } from '../components/SvgIcons';
 import { routineService, type RoutineDetail } from '../services/routineService';
+import { medicalService } from '../services/medicalService';
+import type { MedicalAnalysisResult } from '../types';
 
 export const RoutineScreen: React.FC = () => {
   const {
@@ -27,6 +29,7 @@ export const RoutineScreen: React.FC = () => {
 
   const [isPlayingVideo, setIsPlayingVideo] = useState<boolean>(false);
   const [routine, setRoutine] = useState<RoutineDetail | null>(null);
+  const [medicalAnalysis, setMedicalAnalysis] = useState<MedicalAnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -39,6 +42,9 @@ export const RoutineScreen: React.FC = () => {
         } else {
           setRoutine(null);
         }
+
+        const medRes = await medicalService.getAnalysisResults();
+        setMedicalAnalysis(medRes);
       } catch (err) {
         console.warn('Error al cargar la rutina desde la API:', err);
       } finally {
@@ -129,6 +135,68 @@ export const RoutineScreen: React.FC = () => {
             {/* Top Green Phase Status Bar */}
             <div className="w-full bg-[#10b981] text-slate-950 px-4 py-2 rounded-2xl font-black text-xs text-center tracking-wide uppercase shadow-md">
               {routine.phase}
+            </div>
+
+            {/* AI Medical Vault Prescribed Training Card */}
+            <div
+              className={`rounded-3xl p-5 border backdrop-blur-xl shadow-lg transition-colors duration-300 ${
+                isDark
+                  ? 'bg-gradient-to-br from-[#10b981]/15 via-[#0f172a] to-[#047857]/20 border-[#10b981]/30'
+                  : 'bg-gradient-to-br from-emerald-50 via-white to-teal-50 border-emerald-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">⚡</span>
+                  <div>
+                    <h3 className={`text-sm font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Prescripción de Entrenamiento IA
+                    </h3>
+                    <span className="text-[10px] font-bold text-[#10b981] uppercase tracking-wider">
+                      Adaptación Fisiológica de Bóveda Médica
+                    </span>
+                  </div>
+                </div>
+                {medicalAnalysis?.alertLevel ? (
+                  <span
+                    className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider border ${
+                      medicalAnalysis.alertLevel === 'high'
+                        ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                        : 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30'
+                    }`}
+                  >
+                    Alerta: {medicalAnalysis.alertLevel}
+                  </span>
+                ) : null}
+              </div>
+
+              {medicalAnalysis && medicalAnalysis.exerciseAdjustments && medicalAnalysis.exerciseAdjustments.length > 0 ? (
+                <div className="space-y-2.5 pt-1">
+                  <span className="text-[11px] font-black uppercase tracking-wider text-[#10b981] block">
+                    🏃‍♂️ Estímulos y Adaptaciones Físicas Recomendadas:
+                  </span>
+                  <div className="space-y-1.5">
+                    {medicalAnalysis.exerciseAdjustments.map((item, idx) => (
+                      <div key={idx} className="flex items-start space-x-2 text-xs font-medium">
+                        <span className="text-[#10b981] mt-0.5">•</span>
+                        <span className={isDark ? 'text-slate-200' : 'text-slate-700'}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-2 space-y-2">
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Adjunta tu examen en Bóveda Médica para ajustar dinámicamente tu intensidad de entrenamiento.
+                  </p>
+                  <button
+                    onClick={() => navigate('medical', 'medica')}
+                    className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[#10b981] text-slate-950 shadow-md active:scale-95 transition-transform cursor-pointer"
+                  >
+                    🩺 Vincular Bóveda Médica
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Video Player Card */}
