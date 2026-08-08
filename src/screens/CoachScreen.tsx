@@ -55,11 +55,42 @@ export const CoachScreen: React.FC = () => {
     loadCoachMessage();
   }, []);
 
+  // Reproducir Tono de Confirmación de Audio en Tiempo Real (Web Audio API)
+  const playAudioChime = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {
+      console.warn('Web Audio API chime error:', e);
+    }
+  }, []);
+
   // Función principal para hablar el texto con Voz Sintética en Español
   const speakMotivationalQuote = useCallback(
     (textToSpeak?: string) => {
       const text = textToSpeak || motivationalText;
       if (isCoachMuted || !text) return;
+
+      playAudioChime();
 
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         try {
@@ -116,7 +147,7 @@ export const CoachScreen: React.FC = () => {
         }
       }
     },
-    [isCoachMuted, motivationalText, availableVoices]
+    [isCoachMuted, motivationalText, availableVoices, playAudioChime]
   );
 
   // Detener voz al silenciar
