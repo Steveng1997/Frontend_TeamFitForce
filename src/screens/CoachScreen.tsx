@@ -56,60 +56,68 @@ export const CoachScreen: React.FC = () => {
   }, []);
 
   // Función principal para hablar el texto con Voz Sintética en Español
-  const speakMotivationalQuote = useCallback((textToSpeak?: string) => {
-    const text = textToSpeak || motivationalText;
-    if (isCoachMuted || !text) return;
+  const speakMotivationalQuote = useCallback(
+    (textToSpeak?: string) => {
+      const text = textToSpeak || motivationalText;
+      if (isCoachMuted || !text) return;
 
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel(); // Cancelar cualquier audio previo
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        try {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+          window.speechSynthesis.cancel(); // Cancelar cualquier audio previo
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'es-ES';
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'es-ES';
+          utterance.rate = 0.95; // Velocidad de voz natural
+          utterance.pitch = 1.0;
 
-        const voices = availableVoices.length > 0 ? availableVoices : window.speechSynthesis.getVoices();
-        const spanishVoice = voices.find(
-          (v) =>
-            v.lang.toLowerCase().startsWith('es') ||
-            v.name.toLowerCase().includes('spanish') ||
-            v.name.toLowerCase().includes('sabina') ||
-            v.name.toLowerCase().includes('raul') ||
-            v.name.toLowerCase().includes('monica') ||
-            v.name.toLowerCase().includes('jorge')
-        );
+          const voices = availableVoices.length > 0 ? availableVoices : window.speechSynthesis.getVoices();
+          const spanishVoice = voices.find(
+            (v) =>
+              v.lang.toLowerCase().startsWith('es') ||
+              v.name.toLowerCase().includes('spanish') ||
+              v.name.toLowerCase().includes('sabina') ||
+              v.name.toLowerCase().includes('raul') ||
+              v.name.toLowerCase().includes('monica') ||
+              v.name.toLowerCase().includes('jorge') ||
+              v.name.toLowerCase().includes('google español') ||
+              v.name.toLowerCase().includes('microsoft sabina')
+          );
 
-        if (spanishVoice) {
-          utterance.voice = spanishVoice;
-        }
+          if (spanishVoice) {
+            utterance.voice = spanishVoice;
+          }
 
-        utterance.onstart = () => {
+          utterance.onstart = () => {
+            setIsSpeaking(true);
+            setIsPaused(false);
+            setHasAutoplayBlocked(false);
+          };
+
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            setIsPaused(false);
+          };
+
+          utterance.onerror = (e) => {
+            console.warn('SpeechSynthesis error:', e);
+            setIsSpeaking(false);
+            setHasAutoplayBlocked(true);
+          };
+
+          window.speechSynthesis.speak(utterance);
           setIsSpeaking(true);
-          setIsPaused(false);
-          setHasAutoplayBlocked(false);
-        };
-
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          setIsPaused(false);
-        };
-
-        utterance.onerror = (e) => {
-          console.warn('SpeechSynthesis error:', e);
+        } catch (err) {
+          console.warn('Excepción al reproducir síntesis de voz:', err);
           setIsSpeaking(false);
           setHasAutoplayBlocked(true);
-        };
-
-        window.speechSynthesis.speak(utterance);
-        setIsSpeaking(true);
-      } catch (err) {
-        console.warn('Excepción al reproducir síntesis de voz:', err);
-        setIsSpeaking(false);
-        setHasAutoplayBlocked(true);
+        }
       }
-    }
-  }, [isCoachMuted, motivationalText, availableVoices]);
+    },
+    [isCoachMuted, motivationalText, availableVoices]
+  );
 
   // Detener voz al silenciar
   useEffect(() => {
@@ -179,22 +187,31 @@ export const CoachScreen: React.FC = () => {
     >
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-between px-6 pt-6 pb-4 z-10 text-center">
-        {/* Status Indicator Badge */}
-        <div className="flex items-center space-x-2 bg-rose-500/10 border border-rose-500/30 px-3.5 py-1.5 rounded-full shadow-sm">
-          <span
-            className={`w-2.5 h-2.5 rounded-full bg-rose-500 ${
-              isWaveformActive ? 'animate-ping' : ''
-            }`}
-          />
-          <span className="text-xs font-extrabold text-rose-500 tracking-wide">
-            {isSpeaking
-              ? 'Coach IA Hablando...'
-              : isPaused
-              ? 'Voz en Pausa'
-              : isCoachMuted
-              ? 'Coach Silenciado'
-              : 'Coach IA Conectado'}
-          </span>
+        {/* Status Indicator Badge & Voice Trigger */}
+        <div className="w-full space-y-2.5">
+          <div className="flex items-center justify-center space-x-2 bg-rose-500/10 border border-rose-500/30 px-3.5 py-1.5 rounded-full shadow-sm max-w-xs mx-auto">
+            <span
+              className={`w-2.5 h-2.5 rounded-full bg-rose-500 ${
+                isWaveformActive ? 'animate-ping' : ''
+              }`}
+            />
+            <span className="text-xs font-extrabold text-rose-500 tracking-wide">
+              {isSpeaking
+                ? 'Coach IA Hablando...'
+                : isPaused
+                ? 'Voz en Pausa'
+                : isCoachMuted
+                ? 'Coach Silenciado'
+                : 'Coach IA Conectado'}
+            </span>
+          </div>
+
+          <button
+            onClick={() => speakMotivationalQuote()}
+            className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 via-rose-500 to-emerald-500 hover:from-amber-600 hover:to-emerald-600 text-white font-black text-xs rounded-2xl shadow-lg flex items-center justify-center space-x-2 active:scale-95 transition-all cursor-pointer"
+          >
+            <span>🔊 REPRODUCIR VOZ DEL COACH EN VOZ ALTA</span>
+          </button>
         </div>
 
         {/* Central Robot Avatar */}
@@ -232,16 +249,6 @@ export const CoachScreen: React.FC = () => {
           >
             "{motivationalText}"
           </p>
-
-          {/* Autoplay fallback button for browser gesture requirements */}
-          {(!isSpeaking || hasAutoplayBlocked) && (
-            <button
-              onClick={speakMotivationalQuote}
-              className="mt-3 py-2 px-4 bg-[#f59e0b] hover:bg-[#d97706] text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center space-x-1.5 mx-auto cursor-pointer active:scale-95 transition-transform"
-            >
-              <span>🔊 Tocar para reproducir voz del Coach</span>
-            </button>
-          )}
         </div>
 
         {/* Animated Waveform Audio Indicator */}
