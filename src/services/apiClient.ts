@@ -27,6 +27,12 @@ export async function apiRequest<T = any>(
     const data = await response.json();
 
     if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('teamfit_token');
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        }
+      }
       return {
         success: false,
         error: data.error || `Error ${response.status}: Ocurrió un problema en el servidor.`,

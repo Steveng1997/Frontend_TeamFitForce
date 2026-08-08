@@ -93,6 +93,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number>(0);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      localStorage.removeItem('teamfit_token');
+      setIsAuthenticated(false);
+      setUserProfile(defaultProfile);
+      setCurrentScreen('biometric');
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('auth:unauthorized', handleUnauthorized);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     async function loadProfileFromApi() {
       const token = localStorage.getItem('teamfit_token');
       if (!token) {
@@ -104,6 +122,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (fetchedProfile) {
           setUserProfile(fetchedProfile);
           setIsAuthenticated(true);
+        } else {
+          // Si el usuario fue eliminado de la BD o el token expiró
+          localStorage.removeItem('teamfit_token');
+          setIsAuthenticated(false);
+          setUserProfile(defaultProfile);
+          setCurrentScreen('biometric');
         }
       } catch (error) {
         console.warn('Error al cargar perfil desde la API:', error);
