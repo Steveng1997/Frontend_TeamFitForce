@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TeamFit Force</string>
+    <string name="title_activity_main">TeamFit Force</string>
+    <string name="package_name">com.teamfitforce.app</string>
+    <string name="custom_url_scheme">com.teamfitforce.app</string>
+</resources>

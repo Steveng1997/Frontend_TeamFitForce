@@ -1,0 +1,8 @@
+{
+  "appId": "com.teamfitforce.app",
+  "appName": "TeamFit Force",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
