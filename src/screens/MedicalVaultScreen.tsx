@@ -22,20 +22,16 @@ export const MedicalVaultScreen: React.FC = () => {
   const [analysis, setAnalysis] = useState<MedicalAnalysisResult | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [aiResponseId, setAiResponseId] = useState<string | null>(null);
-  const [examFileUrl, setExamFileUrl] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
         const list = await medicalService.getBiomarkers();
-        if (list) {
-          setBiomarkers(list);
-        }
+        setBiomarkers(list || []);
+
         const res = await medicalService.getAnalysisResults();
-        if (res) {
-          setAnalysis(res);
-        }
+        setAnalysis(res);
       } catch (err) {
         console.warn('Error cargando datos de Bóveda Médica desde API:', err);
       } finally {
@@ -60,7 +56,6 @@ export const MedicalVaultScreen: React.FC = () => {
       const res = await medicalService.uploadExamFile(file);
       if (res.success && res.data) {
         if (res.data.aiResponseId) setAiResponseId(res.data.aiResponseId);
-        if (res.data.fileUrl) setExamFileUrl(res.data.fileUrl);
 
         if (res.data.analysis) {
           setAnalysis(res.data.analysis);
@@ -179,7 +174,7 @@ export const MedicalVaultScreen: React.FC = () => {
               <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center space-y-2 z-10">
                 <span className="text-2xl animate-spin">⚡</span>
                 <span className="text-xs font-black text-[#10b981] uppercase tracking-wider">
-                  Extrayendo Biomarcadores (Glucosa, Cortisol, Vitamina D, Lípidos)...
+                  Analizando Examen Médico en Tiempo Real con IA...
                 </span>
                 <div className="w-3/4 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                   <div className="h-full bg-[#10b981] rounded-full animate-pulse w-4/5" />
@@ -219,76 +214,91 @@ export const MedicalVaultScreen: React.FC = () => {
 
         {!loading && (
           <>
-            {/* Biomarkers Grid */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            {/* If no biomarkers exist */}
+            {biomarkers.length === 0 ? (
+              <div className={`p-6 rounded-3xl border border-dashed text-center space-y-3 ${isDark ? 'bg-[#141c2e]/60 border-slate-800' : 'bg-white border-slate-300'}`}>
+                <span className="text-4xl inline-block">🧬</span>
                 <div>
-                  <h2 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
-                    Biomarcadores Clínicos Procesados
-                  </h2>
-                  <p className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    Evaluados para {userProfile.name || 'Usuario'} • {userProfile.age || '32'} años
+                  <h3 className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    Sin Biomarcadores Registrados
+                  </h3>
+                  <p className={`text-xs font-medium mt-1 leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    Aún no has adjuntado ningún examen médico de laboratorio. Presiona en <b>"Analizar y Guardar Examen con IA"</b> para extraer tus resultados reales y prescribir tu nutrición y entrenamiento.
                   </p>
                 </div>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#10b981]/20 text-[#10b981]">
-                  {biomarkers.length} Detectados
-                </span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                {biomarkers.map((bm) => (
-                  <div
-                    key={bm.id}
-                    className={`p-3.5 rounded-2xl border backdrop-blur-xl flex flex-col justify-between transition-all duration-300 shadow-md ${
-                      isDark
-                        ? 'bg-[#141c2e]/90 border-slate-800/80 hover:border-slate-700'
-                        : 'bg-white border-slate-200 shadow-slate-200/50'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 truncate">
-                          {bm.category}
-                        </span>
-                        <span
-                          className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border ${getStatusBadgeStyle(
-                            bm.status
-                          )}`}
-                        >
-                          {bm.statusLabel}
-                        </span>
-                      </div>
-                      <h3 className={`text-xs font-black leading-snug truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {bm.name}
-                      </h3>
-                    </div>
-
-                    <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-baseline justify-between">
-                      <div>
-                        <span
-                          className={`text-lg font-black tracking-tight ${
-                            bm.status === 'high'
-                              ? 'text-amber-400'
-                              : bm.status === 'low'
-                              ? 'text-blue-400'
-                              : 'text-[#10b981]'
-                          }`}
-                        >
-                          {bm.value}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400 ml-1">{bm.unit}</span>
-                      </div>
-                      <span className="text-[9px] font-semibold text-slate-400 block truncate">
-                        Ref: {bm.referenceRange}
-                      </span>
-                    </div>
+            ) : (
+              /* Biomarkers Grid */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className={`text-sm font-black uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                      Biomarcadores Clínicos Procesados
+                    </h2>
+                    <p className={`text-[11px] font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Evaluados para {userProfile.name || 'Usuario'} • {userProfile.age || '32'} años
+                    </p>
                   </div>
-                ))}
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#10b981]/20 text-[#10b981]">
+                    {biomarkers.length} Detectados
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {biomarkers.map((bm) => (
+                    <div
+                      key={bm.id}
+                      className={`p-3.5 rounded-2xl border backdrop-blur-xl flex flex-col justify-between transition-all duration-300 shadow-md ${
+                        isDark
+                          ? 'bg-[#141c2e]/90 border-slate-800/80 hover:border-slate-700'
+                          : 'bg-white border-slate-200 shadow-slate-200/50'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 truncate">
+                            {bm.category}
+                          </span>
+                          <span
+                            className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border ${getStatusBadgeStyle(
+                              bm.status
+                            )}`}
+                          >
+                            {bm.statusLabel}
+                          </span>
+                        </div>
+                        <h3 className={`text-xs font-black leading-snug truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {bm.name}
+                        </h3>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-800/60 flex items-baseline justify-between">
+                        <div>
+                          <span
+                            className={`text-lg font-black tracking-tight ${
+                              bm.status === 'high'
+                                ? 'text-amber-400'
+                                : bm.status === 'low'
+                                ? 'text-blue-400'
+                                : 'text-[#10b981]'
+                            }`}
+                          >
+                            {bm.value}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400 ml-1">{bm.unit}</span>
+                        </div>
+                        <span className="text-[9px] font-semibold text-slate-400 block truncate">
+                          Ref: {bm.referenceRange}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* AI Prescribed Nutrition & Exercise Adaptations */}
-            {analysis && (
+            {analysis && (analysis.recommendedFoods?.length > 0 || analysis.exerciseAdjustments?.length > 0) && (
               <div
                 className={`rounded-3xl p-5 border backdrop-blur-xl space-y-4 shadow-xl ${
                   isDark
@@ -348,38 +358,6 @@ export const MedicalVaultScreen: React.FC = () => {
                     </ul>
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* Health Score Summary Card */}
-            {analysis && (
-              <div
-                className={`rounded-3xl p-5 border border-l-[6px] border-l-orange-500 backdrop-blur-xl transition-all duration-300 shadow-xl relative overflow-hidden ${
-                  isDark ? 'bg-[#141c2e]/90 border-slate-800' : 'bg-white border-slate-200'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center shadow-inner">
-                      <StethoscopeTabIcon active size={26} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-500 block">
-                        Perfil Bioquímico Integrado
-                      </span>
-                      <h2 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        Score Bioquímico: {analysis.biochemScore}%
-                      </h2>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 bg-orange-500/20 text-orange-400 font-extrabold text-xs rounded-xl border border-orange-500/40">
-                    {analysis.alertCount} alerta(s)
-                  </span>
-                </div>
-
-                <p className={`text-xs mt-3.5 leading-relaxed font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                  {analysis.summary}
-                </p>
               </div>
             )}
           </>

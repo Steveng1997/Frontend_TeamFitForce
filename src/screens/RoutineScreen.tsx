@@ -36,6 +36,8 @@ export const RoutineScreen: React.FC = () => {
         const list = await routineService.getRoutines();
         if (list && list.length > 0) {
           setRoutine(list[0]);
+        } else {
+          setRoutine(null);
         }
       } catch (err) {
         console.warn('Error al cargar la rutina desde la API:', err);
@@ -76,7 +78,7 @@ export const RoutineScreen: React.FC = () => {
           </button>
 
           <h1 className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            {routine?.title || 'Rutina de Ejercicio'}
+            {routine?.title || 'Rutinas de Ejercicio'}
           </h1>
 
           <button
@@ -97,8 +99,28 @@ export const RoutineScreen: React.FC = () => {
           <div className="text-center py-10 space-y-2">
             <span className="text-2xl animate-spin inline-block">⚡</span>
             <p className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              Cargando rutina y ejercicios desde la API...
+              Cargando rutinas prescritas desde la API...
             </p>
+          </div>
+        )}
+
+        {!loading && !routine && (
+          <div className={`p-8 rounded-3xl border border-dashed text-center space-y-4 my-6 ${isDark ? 'bg-[#141c2e]/60 border-slate-800' : 'bg-white border-slate-300'}`}>
+            <span className="text-5xl inline-block">🏋️‍♂️</span>
+            <div className="space-y-2">
+              <h2 className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                Sin Rutina Prescrita Aún
+              </h2>
+              <p className={`text-xs font-medium leading-relaxed max-w-xs mx-auto ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                Presiona para adjuntar tus exámenes de laboratorio en la <b>Bóveda Médica</b>. La IA analizará tus biomarcadores y prescribirá tu plan de entrenamiento adaptado.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('medical', 'medica')}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#10b981] to-[#059669] text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-[#10b981]/25 active:scale-[0.98] transition-all cursor-pointer inline-block"
+            >
+              Ir a Bóveda Médica →
+            </button>
           </div>
         )}
 
@@ -257,7 +279,7 @@ export const RoutineScreen: React.FC = () => {
               >
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#10b981] block mb-1">
-                    Ejercicio Actual
+                    Ejercicio Prescrito por la IA
                   </span>
                   <h2 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {routine.exercises[0].name}
