@@ -338,8 +338,73 @@ export const RoutineScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Current Exercise Detail Card */}
-            {routine.exercises && routine.exercises.length > 0 && (
+            {/* Dynamic AI Prescribed Workout Routine Section */}
+            {medicalAnalysis?.workoutRoutine ? (
+              <div
+                className={`rounded-3xl border p-5 backdrop-blur-xl shadow-xl space-y-4 transition-all duration-300 ${
+                  isDark ? 'bg-[#141c2e]/90 border-[#10b981]/40' : 'bg-white border-emerald-200'
+                }`}
+              >
+                <div className="flex items-center justify-between border-b border-slate-700/40 pb-3">
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#10b981] block">
+                      🏋️‍♂️ Rutina Generada por IA (100% Personalizada)
+                    </span>
+                    <h2 className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {medicalAnalysis.workoutRoutine.title}
+                    </h2>
+                    <p className="text-xs font-semibold text-slate-400 mt-0.5">
+                      {medicalAnalysis.workoutRoutine.weeklyFrequency} • {medicalAnalysis.workoutRoutine.targetZone}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30 uppercase tracking-wider">
+                    {medicalAnalysis.workoutRoutine.phase}
+                  </span>
+                </div>
+
+                {medicalAnalysis.workoutRoutine.safetyNotes && (
+                  <div className={`p-3 rounded-2xl border text-xs font-medium ${isDark ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+                    <b>🛡️ Nota de Seguridad Fisiológica:</b> {medicalAnalysis.workoutRoutine.safetyNotes}
+                  </div>
+                )}
+
+                {medicalAnalysis.workoutRoutine.exercises && medicalAnalysis.workoutRoutine.exercises.length > 0 && (
+                  <div className="space-y-3 pt-1">
+                    <h3 className={`text-xs font-extrabold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      Ejercicios Prescritos según tu Examen Médico:
+                    </h3>
+
+                    {medicalAnalysis.workoutRoutine.exercises.map((ex, idx) => (
+                      <div
+                        key={ex.id || idx}
+                        className={`p-3.5 rounded-2xl border flex items-center justify-between transition-colors ${
+                          isDark ? 'bg-slate-800/60 border-slate-700/60' : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-xl bg-[#10b981]/20 text-[#10b981] font-black text-xs flex items-center justify-center shrink-0">
+                            #{idx + 1}
+                          </div>
+                          <div>
+                            <h4 className={`text-xs font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                              {ex.name}
+                            </h4>
+                            <p className="text-[11px] font-extrabold text-[#10b981] mt-0.5">
+                              {ex.sets} • {ex.reps} • Descanso: {ex.rest}
+                            </p>
+                            {ex.notes && (
+                              <p className={`text-[10px] italic mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                {ex.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : routine?.exercises && routine.exercises.length > 0 ? (
               <div
                 className={`rounded-3xl border p-5 backdrop-blur-xl transition-all duration-300 shadow-xl space-y-4 ${
                   isDark ? 'bg-[#141c2e]/90 border-slate-800' : 'bg-white border-slate-200'
@@ -347,7 +412,7 @@ export const RoutineScreen: React.FC = () => {
               >
                 <div>
                   <span className="text-[10px] font-black uppercase tracking-wider text-[#10b981] block mb-1">
-                    Ejercicio Prescrito por la IA
+                    Ejercicio Prescrito
                   </span>
                   <h2 className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                     {routine.exercises[0].name}
@@ -364,7 +429,7 @@ export const RoutineScreen: React.FC = () => {
                   </span>
                 </div>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>

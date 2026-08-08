@@ -18,13 +18,19 @@ export const medicalService = {
     return [];
   },
 
-  async uploadExamFile(file: File): Promise<{ success: boolean; data?: any; error?: string }> {
+  async uploadExamFiles(files: File[]): Promise<{ success: boolean; data?: any; error?: string }> {
     const formData = new FormData();
-    formData.append('examFile', file);
+    files.forEach((file) => {
+      formData.append('examFiles', file);
+    });
 
     return await apiRequest('/medical-vault/upload', {
       method: 'POST',
       body: formData,
     });
+  },
+
+  async uploadExamFile(file: File): Promise<{ success: boolean; data?: any; error?: string }> {
+    return this.uploadExamFiles([file]);
   },
 };

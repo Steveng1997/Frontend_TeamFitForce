@@ -46,14 +46,15 @@ export const MedicalVaultScreen: React.FC = () => {
   };
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const filesList = e.target.files;
+    if (!filesList || filesList.length === 0) return;
 
-    setSelectedFile(file.name);
+    const filesArray = Array.from(filesList);
+    setSelectedFile(filesArray.map((f) => f.name).join(', '));
     setIsAnalyzing(true);
 
     try {
-      const res = await medicalService.uploadExamFile(file);
+      const res = await medicalService.uploadExamFiles(filesArray);
       if (res.success && res.data) {
         if (res.data.aiResponseId) setAiResponseId(res.data.aiResponseId);
 
@@ -65,7 +66,7 @@ export const MedicalVaultScreen: React.FC = () => {
         }
       }
     } catch (err) {
-      console.warn('Error subiendo examen:', err);
+      console.warn('Error subiendo examen(es):', err);
     } finally {
       setIsAnalyzing(false);
     }
@@ -97,6 +98,7 @@ export const MedicalVaultScreen: React.FC = () => {
         ref={fileInputRef}
         onChange={handleFileSelected}
         accept=".pdf,.png,.jpg,.jpeg"
+        multiple
         className="hidden"
       />
 

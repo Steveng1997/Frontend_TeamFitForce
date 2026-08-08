@@ -37,6 +37,24 @@ export interface BiomarkerItem {
   category: string;
 }
 
+export interface WorkoutExercise {
+  id: string;
+  name: string;
+  sets: string;
+  reps: string;
+  rest: string;
+  notes: string;
+}
+
+export interface WorkoutRoutineAI {
+  title: string;
+  phase: string;
+  targetZone: string;
+  weeklyFrequency: string;
+  safetyNotes: string;
+  exercises: WorkoutExercise[];
+}
+
 export interface MedicalAnalysisResult {
   biochemScore: number;
   alertCount: number;
@@ -45,6 +63,7 @@ export interface MedicalAnalysisResult {
   recommendedFoods: string[];
   restrictedFoods: string[];
   exerciseAdjustments: string[];
+  workoutRoutine?: WorkoutRoutineAI | null;
   nextExamDays: number;
   nextExamText: string;
 }
